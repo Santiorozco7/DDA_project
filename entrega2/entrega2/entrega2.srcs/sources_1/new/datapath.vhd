@@ -32,8 +32,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use UNISIM.VComponents.all;
 
 entity datapath is
-    Port ( data_in : in STD_LOGIC_VECTOR (23 downto 0);
-           data_out : out STD_LOGIC_VECTOR (23 downto 0);
+    Port ( Xi, Yi, Zi: in STD_LOGIC_VECTOR (23 downto 0);
+           Xo, Yo, Zo : out STD_LOGIC_VECTOR (23 downto 0);
+           n: in STD_LOGIC_VECTOR(4 downto 0);
            sel_mux : in STD_LOGIC;
            en_r : in STD_LOGIC;
            clk: in std_logic;
@@ -68,7 +69,7 @@ component add_sub is
     port(
         data_in, shifter: in    std_logic_vector(23 downto 0);
         signo:   in    std_logic;
-        data_out: out  std_logic_vector(23 downto 0)   
+        data_out: out  std_logic_vector(24 downto 0)   
 	);
 end component;
 
@@ -87,21 +88,19 @@ signal mux_rx_out,mux_ry_out,mux_rz_out: std_logic_vector(23 downto 0);
 signal reg_x_out,reg_y_out,reg_z_out: std_logic_vector(23 downto 0);
 
 --signals of add_sub
-signal add_sub_x_out,add_sub_y_out,add_sub_z_out: std_logic_vector(23 downto 0);
+signal add_sub_x_out,add_sub_y_out,add_sub_z_out: std_logic_vector(24 downto 0);
 signal bit_signo, not_bit_signo: std_logic;
 
 --signals of barrel shifter
 signal shift_x_out, shift_y_out: std_logic_vector(23 downto 0);
-signal n_shift: std_logic_vector(4 downto 0);
 
 --signal of rom
 signal rom_out: std_logic_vector(23 downto 0);
-signal addr: std_logic_vector(4 downto 0);
 
 begin
 
 -- The r X mutiplexer
-mux_rx_out<=add_sub_x_out(23 downto 0) when (sel_mux='0') else data_in;
+mux_rx_out<=add_sub_x_out(23 downto 0) when (sel_mux='0') else Xi;
 
 -- The remainder register
 regx: reg 
@@ -116,7 +115,7 @@ regx: reg
     );
 
 -- The r Y mutiplexer
-mux_ry_out<=add_sub_y_out(23 downto 0) when (sel_mux='0') else data_in;
+mux_ry_out<=add_sub_y_out(23 downto 0) when (sel_mux='0') else Yi;
 
 -- The remainder register
 regy: reg 
@@ -131,7 +130,7 @@ regy: reg
     );
     
 -- The r Z mutiplexer
-mux_rz_out<=add_sub_z_out(23 downto 0) when (sel_mux='0') else data_in;
+mux_rz_out<=add_sub_z_out(23 downto 0) when (sel_mux='0') else Zi;
 
 -- The remainder register
 regz: reg 
@@ -147,19 +146,19 @@ regz: reg
 
 rom0: rom port map(
     clk=>clk,
-    addr=>addr,
+    addr=>n,
     data=>rom_out
 );
 
 barrelshifterx: barrel_shifter port map (
     data_in  => reg_x_out,
-    shift    => n_shift,
+    shift    => n,
     data_out => shift_x_out
 );
    
 barrelshiftery: barrel_shifter port map (
     data_in  => reg_y_out,
-    shift    => n_shift,
+    shift    => n,
     data_out => shift_y_out
 );
     
@@ -182,10 +181,13 @@ add_suby: add_sub port map (
 );
  
 add_subz: add_sub port map (
-    data_in => data_in,
+    data_in => reg_z_out,
     shifter => rom_out,
     signo => reg_z_out(23),
     data_out => add_sub_z_out
 );
 
+Xo<=add_sub_x_out(23 downto 0);
+Yo<=add_sub_y_out(23 downto 0);
+Zo<=add_sub_z_out(23 downto 0);
 end rtl;

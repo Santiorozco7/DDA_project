@@ -35,7 +35,7 @@ entity add_sub is
     port(
         data_in, shifter: in    std_logic_vector(23 downto 0);
         signo:   in    std_logic;
-        data_out: out  std_logic_vector(23 downto 0)   
+        data_out: out  std_logic_vector(24 downto 0)   
 	);
 end entity;
 
@@ -45,9 +45,9 @@ begin
 
 process(data_in, shifter, signo) begin
     if(signo = '1') then
-        data_out <= std_logic_vector(signed(data_in) + signed(shifter));
+        data_out <= '0' & std_logic_vector(signed(data_in) + signed(shifter));
     else
-        data_out <= std_logic_vector(signed(data_in) - signed(shifter));
+        data_out <= '0' & std_logic_vector(signed(data_in) - signed(shifter));
     end if;
 end process;
 end rtl;
