@@ -32,10 +32,11 @@ use IEEE.NUMERIC_STD.ALL;
 --use UNISIM.VComponents.all;
 
 entity add_sub is	
+	generic (N	:integer:=24 );
     port(
-        data_in, shifter: in    std_logic_vector(23 downto 0);
+        data_in, shifter: in    std_logic_vector(N-1 downto 0);
         signo:   in    std_logic;
-        data_out: out  std_logic_vector(23 downto 0)   
+        data_out: out  std_logic_vector(N-1 downto 0)   
 	);
 end entity;
 

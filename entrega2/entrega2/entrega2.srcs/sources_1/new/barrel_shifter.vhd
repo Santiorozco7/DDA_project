@@ -34,9 +34,9 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity barrel_shifter is
     port (
-        data_in  : in  std_logic_vector(23 downto 0);
+        data_in  : in  std_logic_vector(24 downto 0);
         shift    : in  std_logic_vector(4 downto 0);
-        data_out : out std_logic_vector(23 downto 0)
+        data_out : out std_logic_vector(24 downto 0)
     );
 end entity barrel_shifter;
 
