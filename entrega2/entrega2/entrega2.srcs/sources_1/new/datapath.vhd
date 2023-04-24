@@ -32,8 +32,10 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use UNISIM.VComponents.all;
 
 entity datapath is
-    Port ( Xi, Yi, Zi: in STD_LOGIC_VECTOR (23 downto 0);
-           Xo, Yo, Zo : out STD_LOGIC_VECTOR (23 downto 0);
+	generic (T	:integer:=25 );
+    Port ( Xi, Yi, Zi: in STD_LOGIC_VECTOR (T-2 downto 0);
+           Xo, Yo: out STD_LOGIC_VECTOR (T-1 downto 0);
+           Zo : out STD_LOGIC_VECTOR (T-2 downto 0);
            n: in STD_LOGIC_VECTOR(4 downto 0);
            sel_mux : in STD_LOGIC;
            en_r : in STD_LOGIC;
@@ -59,17 +61,18 @@ end component;
 
 component barrel_shifter is
     port (
-        data_in  : in  std_logic_vector(23 downto 0);
+        data_in  : in  std_logic_vector(24 downto 0);
         shift    : in  std_logic_vector(4 downto 0);
-        data_out : out std_logic_vector(23 downto 0)
+        data_out : out std_logic_vector(24 downto 0)
     );
 end component;
 
-component add_sub is	
+component add_sub is
+	generic (N	:integer:=24 );	
     port(
-        data_in, shifter: in    std_logic_vector(23 downto 0);
+        data_in, shifter: in    std_logic_vector(N-1 downto 0);
         signo:   in    std_logic;
-        data_out: out  std_logic_vector(24 downto 0)   
+        data_out: out  std_logic_vector(N-1 downto 0)   
 	);
 end component;
 
@@ -82,29 +85,36 @@ component rom is
 end component;
 
 --signals of mux
-signal mux_rx_out,mux_ry_out,mux_rz_out: std_logic_vector(23 downto 0);
+signal mux_extend_x, mux_extend_y: std_logic_vector(T-1 downto 0);
+signal mux_rx_out,mux_ry_out: std_logic_vector(T-1 downto 0);
+signal mux_rz_out: std_logic_vector(T-2 downto 0);
 
 --signals of reg
-signal reg_x_out,reg_y_out,reg_z_out: std_logic_vector(23 downto 0);
+signal reg_x_out,reg_y_out: std_logic_vector(T-1 downto 0);
+signal reg_z_out: std_logic_vector(T-2 downto 0);
 
 --signals of add_sub
-signal add_sub_x_out,add_sub_y_out,add_sub_z_out: std_logic_vector(24 downto 0);
+signal add_sub_x_out,add_sub_y_out: std_logic_vector(T-1 downto 0);
+signal add_sub_z_out: std_logic_vector(T-2 downto 0);
 signal bit_signo, not_bit_signo: std_logic;
 
 --signals of barrel shifter
-signal shift_x_out, shift_y_out: std_logic_vector(23 downto 0);
+signal shift_x_out, shift_y_out: std_logic_vector(T-1 downto 0);
 
 --signal of rom
-signal rom_out: std_logic_vector(23 downto 0);
+signal rom_out: std_logic_vector(T-2 downto 0);
 
 begin
 
 -- The r X mutiplexer
-mux_rx_out<=add_sub_x_out(23 downto 0) when (sel_mux='0') else Xi;
+mux_extend_x(T-1 downto T-2) <= (others => Xi(T-2));
+mux_extend_x(T-2 downto 0) <= Xi;
+
+mux_rx_out<=add_sub_x_out when (sel_mux='0') else mux_extend_x;
 
 -- The remainder register
 regx: reg 
-    generic map(N=>24)
+    generic map(N=>25)
     port map(
     clk=>clk,
     rst=>rst,
@@ -115,11 +125,13 @@ regx: reg
     );
 
 -- The r Y mutiplexer
-mux_ry_out<=add_sub_y_out(23 downto 0) when (sel_mux='0') else Yi;
+mux_extend_y(T-1 downto T-2) <= (others => Yi(T-2));
+mux_extend_y(T-2 downto 0) <= Yi;
+mux_ry_out<=add_sub_y_out when (sel_mux='0') else mux_extend_y;
 
 -- The remainder register
 regy: reg 
-    generic map(N=>24)
+    generic map(N=>25)
     port map(
     clk=>clk,
     rst=>rst,
@@ -130,7 +142,7 @@ regy: reg
     );
     
 -- The r Z mutiplexer
-mux_rz_out<=add_sub_z_out(23 downto 0) when (sel_mux='0') else Zi;
+mux_rz_out<=add_sub_z_out when (sel_mux='0') else Zi;
 
 -- The remainder register
 regz: reg 
@@ -162,32 +174,38 @@ barrelshiftery: barrel_shifter port map (
     data_out => shift_y_out
 );
     
-add_subx: add_sub port map (
+add_subx: add_sub 
+    generic map(N=>25)
+    port map (
     data_in => reg_x_out,
     shifter => shift_y_out,
     signo => reg_z_out(23),
     data_out => add_sub_x_out
 );
 
-bit_signo<=reg_z_out(23);
+bit_signo<=reg_z_out(T-2);
 not_bit_signo<=not(bit_signo);
 
 
-add_suby: add_sub port map (
+add_suby: add_sub 
+    generic map(N=>25)
+    port map (
     data_in => reg_y_out,
     shifter => shift_x_out,
     signo => not_bit_signo,
     data_out => add_sub_y_out
 );
  
-add_subz: add_sub port map (
+add_subz: add_sub 
+    generic map(N=>24)
+    port map (
     data_in => reg_z_out,
     shifter => rom_out,
     signo => reg_z_out(23),
     data_out => add_sub_z_out
 );
 
-Xo<=add_sub_x_out(23 downto 0);
-Yo<=add_sub_y_out(23 downto 0);
-Zo<=add_sub_z_out(23 downto 0);
+Xo<=add_sub_x_out;
+Yo<=add_sub_y_out;
+Zo<=add_sub_z_out;
 end rtl;

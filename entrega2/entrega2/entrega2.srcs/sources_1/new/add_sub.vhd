@@ -32,10 +32,11 @@ use IEEE.NUMERIC_STD.ALL;
 --use UNISIM.VComponents.all;
 
 entity add_sub is	
+	generic (N	:integer:=24 );
     port(
-        data_in, shifter: in    std_logic_vector(23 downto 0);
+        data_in, shifter: in    std_logic_vector(N-1 downto 0);
         signo:   in    std_logic;
-        data_out: out  std_logic_vector(24 downto 0)   
+        data_out: out  std_logic_vector(N-1 downto 0)   
 	);
 end entity;
 
@@ -45,9 +46,9 @@ begin
 
 process(data_in, shifter, signo) begin
     if(signo = '1') then
-        data_out <= '0' & std_logic_vector(signed(data_in) + signed(shifter));
+        data_out <= std_logic_vector(signed(data_in) + signed(shifter));
     else
-        data_out <= '0' & std_logic_vector(signed(data_in) - signed(shifter));
+        data_out <= std_logic_vector(signed(data_in) - signed(shifter));
     end if;
 end process;
 end rtl;
